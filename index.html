@@ -93,6 +93,19 @@
 
     buttonElement.addEventListener("click", () => {
 
+      nameInputElement.classList.remove("error");
+      commentInputElement.classList.remove("error");
+
+      if (nameInputElement.value === "") {
+        nameInputElement.classList.add("error");
+        return;
+      }
+
+      if (commentInputElement.value === "") {
+        commentInputElement.classList.add("error");
+        return;
+      }
+
       const currentDateTime = getCurrentDateTime();
 
       const oldListHtml = commentListElement.innerHTML;
@@ -115,6 +128,9 @@
             </div>
           </div>
         </li>`;
+
+        nameInputElement.value = "";
+        commentInputElement.value = "";
     });
 
     console.log("It works!");
