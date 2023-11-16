@@ -8,7 +8,7 @@
 
   <body>
     <div class="container">
-      <ul class="comments">
+      <ul class="comments" id="comments">
         <li class="comment">
           <div class="comment-header">
             <div>Глеб Фокин</div>
@@ -39,7 +39,7 @@
           <div class="comment-footer">
             <div class="likes">
               <span class="likes-counter">75</span>
-              <button class="like-button -active-like"></button>
+              <button class="like-button -active-like" id="add-form-button"></button>
             </div>
           </div>
         </li>
@@ -48,16 +48,18 @@
         <input
           type="text"
           class="add-form-name"
+          id="add-form-name"
           placeholder="Введите ваше имя"
         />
         <textarea
           type="textarea"
           class="add-form-text"
+          id="add-form-text"
           placeholder="Введите ваш коментарий"
           rows="4"
         ></textarea>
         <div class="add-form-row">
-          <button class="add-form-button">Написать</button>
+          <button class="add-form-button" id="add-button">Написать</button>
         </div>
       </div>
     </div>
@@ -65,7 +67,56 @@
 
   <script>
     "use strict";
-    // Код писать здесь
+    const buttonElement  = document.getElementById("add-button");
+    const commentListElement = document.getElementById("comments");
+    const nameInputElement = document.getElementById("add-form-name");
+    const commentInputElement = document.getElementById("add-form-text");
+    function getCurrentDateTime() {
+      const currentDate = new Date();
+      const options = {
+        year: '2-digit',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      };
+      
+      const formatter = new Intl.DateTimeFormat('ru-RU', options);
+      const formattedDate = formatter.format(currentDate);
+      const [datePart, timePart] = formattedDate.split(', ');
+      const [date] = datePart.split('/');
+      const [hour, minute] = timePart.split(':');
+
+      return `${date} ${hour}:${minute}`;
+    }
+
+    buttonElement.addEventListener("click", () => {
+
+      const currentDateTime = getCurrentDateTime();
+
+      const oldListHtml = commentListElement.innerHTML;
+      commentListElement.innerHTML =
+        oldListHtml +
+        `<li class="comment">
+          <div class="comment-header">
+            <div>${nameInputElement.value}</div>
+            <div>${currentDateTime}</div>
+          </div>
+          <div class="comment-body">
+            <div class="comment-text">
+              ${commentInputElement.value}
+            </div>
+          </div>
+          <div class="comment-footer">
+            <div class="likes">
+              <span class="likes-counter">0</span>
+              <button class="like-button"></button>
+            </div>
+          </div>
+        </li>`;
+    });
+
     console.log("It works!");
   </script>
 </html>
