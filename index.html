@@ -9,8 +9,11 @@
 
 <body>
   <div class="container">
+    <div id="loader">
+      <p>Комментарии загружаются...</p>
+    </div>
     <ul class="comments" id="list">
-      <!-- Список рендерится из JS -->
+
     </ul>
     <div class="add-form">
       <input type="text" class="add-form-name" id="add-form-name" placeholder="Введите ваше имя" />
@@ -29,6 +32,7 @@
   const commentListElement = document.getElementById("list");
   const nameInputElement = document.getElementById("add-form-name");
   const commentInputElement = document.getElementById("add-form-text");
+  const loader = document.getElementById("loader");
   let comments = [];
 
   function formatDateTime(d) {
@@ -59,17 +63,15 @@
   };
 
   const getComments = () => {
-    const request = fetch("https://wedev-api.sky.pro/api/v1/andrey-k/comments", {
+
+    const request = fetch("https://wedev-api.sky.pro/api/v1/andrey-kr/comments", {
       method: "GET"
     });
-
     request.then((response) => {
-
-      const jsonPromise = response.json();
-
-      jsonPromise.then((responseData) => {
-        const apiComments = responseData.comments.map((comment) => {
-
+      return response.json();
+    })
+      .then((response) => {
+        comments = response.comments.map((comment) => {
           return {
             author: comment.author.name,
             date: formatDateTime(comment.date),
@@ -78,10 +80,12 @@
             likedByUser: comment.isLiked,
           }
         });
-        comments = apiComments;
+      })
+      .then(() => {
         renderApp();
+        loader.innerHTML = '';
+        buttonElement.disabled = false;
       });
-    });
   };
 
   const renderComments = () => {
@@ -142,7 +146,7 @@ ${comments[index].author},`
   };
 
   buttonElement.addEventListener("click", () => {
-
+    buttonElement.disabled = true;
     nameInputElement.classList.remove("error");
     commentInputElement.classList.remove("error");
 
@@ -157,16 +161,18 @@ ${comments[index].author},`
 
     const currentDateTime = formatDateTime(new Date);
 
-    fetch("https://wedev-api.sky.pro/api/v1/andrey-k/comments", {
+    fetch("https://wedev-api.sky.pro/api/v1/andrey-kr/comments", {
       method: "POST",
       body: JSON.stringify({
         text: commentInputElement.value.replaceAll("<", "&lt;").replaceAll(">", "&gt;"),
         name: nameInputElement.value.replaceAll("<", "&lt;").replaceAll(">", "&gt;"),
       }),
-    }).then(getComments());
+    })
+    .then(() => {
+      getComments();
+    });
 
     commentInputElement.value = '';
-    renderApp();
   });
 
   getComments();
