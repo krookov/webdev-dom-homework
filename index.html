@@ -29,9 +29,11 @@
   const commentListElement = document.getElementById("list");
   const nameInputElement = document.getElementById("add-form-name");
   const commentInputElement = document.getElementById("add-form-text");
+  let comments = [];
 
-  function getCurrentDateTime() {
-    const currentDate = new Date();
+  function formatDateTime(d) {
+
+    const currentDate = new Date(d);
     const options = {
       year: '2-digit',
       month: '2-digit',
@@ -50,51 +52,64 @@
     return `${date} ${hour}:${minute}`;
   }
 
-  const comments = [
-    {
-      author: "Глеб",
-      date: '12.02.22 12:18',
-      text: 'Это будет первый комментарий на этой странице',
-      likesCount: 3,
-      likedByUser: false,
-    },
-    {
-      author: "Варвара Н.",
-      date: '13.02.22 19:22',
-      text: 'Мне нравится как оформлена эта страница! ❤',
-      likesCount: 75,
-      likedByUser: true,
-    },
-  ];
+  const renderApp = () => {
+    renderComments();
+    initLikeButtonsListeners();
+    initCommentsListeners();
+  };
+
+  const getComments = () => {
+    const request = fetch("https://wedev-api.sky.pro/api/v1/andrey-k/comments", {
+      method: "GET"
+    });
+
+    request.then((response) => {
+
+      const jsonPromise = response.json();
+
+      jsonPromise.then((responseData) => {
+        const apiComments = responseData.comments.map((comment) => {
+
+          return {
+            author: comment.author.name,
+            date: formatDateTime(comment.date),
+            text: comment.text,
+            likesCount: comment.likes,
+            likedByUser: comment.isLiked,
+          }
+        });
+        comments = apiComments;
+        renderApp();
+      });
+    });
+  };
 
   const renderComments = () => {
     const commentsHtml = comments
       .map((comment, index) => {
         return `<li class="comment" id="comment" data-index="${index}">
-              <div class="comment-header">
-                <div>${comment.author}</div>
-                <div>${comment.date}</div>
+            <div class="comment-header">
+              <div>${comment.author}</div>
+              <div>${comment.date}</div>
+            </div>
+            <div class="comment-body">
+              <div class="comment-text">
+                ${comment.text}
               </div>
-              <div class="comment-body">
-                <div class="comment-text">
-                  ${comment.text}
-                </div>
+            </div>
+            <div class="comment-footer">
+              <div class="likes">
+                <span class="likes-counter">${comment.likesCount}</span>
+                <button data-index="${index}" id="like-button" class="like-button ${comment.likedByUser ? '-active-like' : ''}"></button>
               </div>
-              <div class="comment-footer">
-                <div class="likes">
-                  <span class="likes-counter">${comment.likesCount}</span>
-                  <button data-index="${index}" id="like-button" class="like-button ${comment.likedByUser ? '-active-like' : ''}"></button>
-                </div>
-              </div>
-            </li>`;
+            </div>
+          </li>`;
       })
       .join("");
 
     commentListElement.innerHTML = commentsHtml;
 
   }
-
-  renderComments();
 
   const initLikeButtonsListeners = () => {
     const likeButtonsElements = document.querySelectorAll(".like-button");
@@ -105,31 +120,26 @@
         const index = likeButtonElement.dataset.index;
         comments[index].likedByUser = !comments[index].likedByUser;
         comments[index].likedByUser ? comments[index].likesCount++ : comments[index].likesCount--;
-        renderComments();
-        initLikeButtonsListeners();
-        initCommentsListeners();
+        renderApp();
       });
     }
 
   };
-
-  initLikeButtonsListeners();
 
   const initCommentsListeners = () => {
     const commentsElements = document.querySelectorAll(".comment");
-    
+
     for (const commentElement of commentsElements) {
       commentElement.addEventListener("click", () => {
         const index = commentElement.dataset.index;
-        commentInputElement.value = `${comments[index].author} ${comments[index].text}`
+        commentInputElement.value = `> ${comments[index].text}
+${comments[index].author},`
 
         initLikeButtonsListeners();
         initCommentsListeners();
       });
     }
   };
-
-  initCommentsListeners();
 
   buttonElement.addEventListener("click", () => {
 
@@ -145,22 +155,24 @@
       return;
     }
 
-    const currentDateTime = getCurrentDateTime();
+    const currentDateTime = formatDateTime(new Date);
 
-    comments.push({
-      author: nameInputElement.value.replaceAll("<", "&lt;").replaceAll(">", "&gt;"),
-      date: currentDateTime,
-      text: commentInputElement.value,
-      likesCount: 0,
-      likedByUser: false,
-    });
+    fetch("https://wedev-api.sky.pro/api/v1/andrey-k/comments", {
+      method: "POST",
+      body: JSON.stringify({
+        text: commentInputElement.value.replaceAll("<", "&lt;").replaceAll(">", "&gt;"),
+        name: nameInputElement.value.replaceAll("<", "&lt;").replaceAll(">", "&gt;"),
+      }),
+    }).then(getComments());
 
     commentInputElement.value = '';
-
-    renderComments();
-    initLikeButtonsListeners();
-    initCommentsListeners();
+    renderApp();
   });
+
+  getComments();
+  renderComments();
+  initCommentsListeners();
+  initLikeButtonsListeners();
 
 </script>
 
