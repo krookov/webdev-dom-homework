@@ -70,7 +70,7 @@
   const renderComments = () => {
     const commentsHtml = comments
       .map((comment, index) => {
-        return `<li class="comment">
+        return `<li class="comment" id="comment" data-index="${index}">
               <div class="comment-header">
                 <div>${comment.author}</div>
                 <div>${comment.date}</div>
@@ -101,18 +101,35 @@
 
     for (const likeButtonElement of likeButtonsElements) {
       likeButtonElement.addEventListener("click", () => {
+        event.stopPropagation();
         const index = likeButtonElement.dataset.index;
-        console.log(likeButtonsElements);
         comments[index].likedByUser = !comments[index].likedByUser;
         comments[index].likedByUser ? comments[index].likesCount++ : comments[index].likesCount--;
         renderComments();
         initLikeButtonsListeners();
+        initCommentsListeners();
       });
     }
+
   };
 
   initLikeButtonsListeners();
 
+  const initCommentsListeners = () => {
+    const commentsElements = document.querySelectorAll(".comment");
+    
+    for (const commentElement of commentsElements) {
+      commentElement.addEventListener("click", () => {
+        const index = commentElement.dataset.index;
+        commentInputElement.value = `${comments[index].author} ${comments[index].text}`
+
+        initLikeButtonsListeners();
+        initCommentsListeners();
+      });
+    }
+  };
+
+  initCommentsListeners();
 
   buttonElement.addEventListener("click", () => {
 
@@ -131,15 +148,18 @@
     const currentDateTime = getCurrentDateTime();
 
     comments.push({
-      author: nameInputElement.value,
+      author: nameInputElement.value.replaceAll("<", "&lt;").replaceAll(">", "&gt;"),
       date: currentDateTime,
       text: commentInputElement.value,
       likesCount: 0,
       likedByUser: false,
     });
 
+    commentInputElement.value = '';
+
     renderComments();
     initLikeButtonsListeners();
+    initCommentsListeners();
   });
 
 </script>
