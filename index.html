@@ -1,71 +1,185 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Проект "Комменты"</title>
-    <meta charset="utf-8" />
-    <link rel="stylesheet" href="styles.css" />
-  </head>
 
-  <body>
-    <div class="container">
-      <ul class="comments">
-        <li class="comment">
-          <div class="comment-header">
-            <div>Глеб Фокин</div>
-            <div>12.02.22 12:18</div>
-          </div>
-          <div class="comment-body">
-            <div class="comment-text">
-              Это будет первый комментарий на этой странице
-            </div>
-          </div>
-          <div class="comment-footer">
-            <div class="likes">
-              <span class="likes-counter">3</span>
-              <button class="like-button"></button>
-            </div>
-          </div>
-        </li>
-        <li class="comment">
-          <div class="comment-header">
-            <div>Варвара Н.</div>
-            <div>13.02.22 19:22</div>
-          </div>
-          <div class="comment-body">
-            <div class="comment-text">
-              Мне нравится как оформлена эта страница! ❤
-            </div>
-          </div>
-          <div class="comment-footer">
-            <div class="likes">
-              <span class="likes-counter">75</span>
-              <button class="like-button -active-like"></button>
-            </div>
-          </div>
-        </li>
-      </ul>
-      <div class="add-form">
-        <input
-          type="text"
-          class="add-form-name"
-          placeholder="Введите ваше имя"
-        />
-        <textarea
-          type="textarea"
-          class="add-form-text"
-          placeholder="Введите ваш коментарий"
-          rows="4"
-        ></textarea>
-        <div class="add-form-row">
-          <button class="add-form-button">Написать</button>
-        </div>
+<head>
+  <title>Проект "Комменты"</title>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <div class="container">
+    <div id="loader">
+      <p>Комментарии загружаются...</p>
+    </div>
+    <ul class="comments" id="list">
+
+    </ul>
+    <div class="add-form">
+      <input type="text" class="add-form-name" id="add-form-name" placeholder="Введите ваше имя" />
+      <textarea type="textarea" class="add-form-text" id="add-form-text" placeholder="Введите ваш коментарий"
+        rows="4"></textarea>
+      <div class="add-form-row">
+        <button class="add-form-button" id="add-button">Написать</button>
       </div>
     </div>
-  </body>
+  </div>
+</body>
 
-  <script>
-    "use strict";
-    // Код писать здесь
-    console.log("It works!");
-  </script>
+<script>
+  "use strict";
+  const buttonElement = document.getElementById("add-button");
+  const commentListElement = document.getElementById("list");
+  const nameInputElement = document.getElementById("add-form-name");
+  const commentInputElement = document.getElementById("add-form-text");
+  const loader = document.getElementById("loader");
+  let comments = [];
+
+  function formatDateTime(d) {
+
+    const currentDate = new Date(d);
+    const options = {
+      year: '2-digit',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    };
+
+    const formatter = new Intl.DateTimeFormat('ru-RU', options);
+    const formattedDate = formatter.format(currentDate);
+    const [datePart, timePart] = formattedDate.split(', ');
+    const [date] = datePart.split('/');
+    const [hour, minute] = timePart.split(':');
+
+    return `${date} ${hour}:${minute}`;
+  }
+
+  const renderApp = () => {
+    renderComments();
+    initLikeButtonsListeners();
+    initCommentsListeners();
+  };
+
+  const getComments = () => {
+
+    const request = fetch("https://wedev-api.sky.pro/api/v1/andrey-kr/comments", {
+      method: "GET"
+    });
+    request.then((response) => {
+      return response.json();
+    })
+      .then((response) => {
+        comments = response.comments.map((comment) => {
+          return {
+            author: comment.author.name,
+            date: formatDateTime(comment.date),
+            text: comment.text,
+            likesCount: comment.likes,
+            likedByUser: comment.isLiked,
+          }
+        });
+      })
+      .then(() => {
+        renderApp();
+        loader.innerHTML = '';
+        buttonElement.disabled = false;
+      });
+  };
+
+  const renderComments = () => {
+    const commentsHtml = comments
+      .map((comment, index) => {
+        return `<li class="comment" id="comment" data-index="${index}">
+            <div class="comment-header">
+              <div>${comment.author}</div>
+              <div>${comment.date}</div>
+            </div>
+            <div class="comment-body">
+              <div class="comment-text">
+                ${comment.text}
+              </div>
+            </div>
+            <div class="comment-footer">
+              <div class="likes">
+                <span class="likes-counter">${comment.likesCount}</span>
+                <button data-index="${index}" id="like-button" class="like-button ${comment.likedByUser ? '-active-like' : ''}"></button>
+              </div>
+            </div>
+          </li>`;
+      })
+      .join("");
+
+    commentListElement.innerHTML = commentsHtml;
+
+  }
+
+  const initLikeButtonsListeners = () => {
+    const likeButtonsElements = document.querySelectorAll(".like-button");
+
+    for (const likeButtonElement of likeButtonsElements) {
+      likeButtonElement.addEventListener("click", () => {
+        event.stopPropagation();
+        const index = likeButtonElement.dataset.index;
+        comments[index].likedByUser = !comments[index].likedByUser;
+        comments[index].likedByUser ? comments[index].likesCount++ : comments[index].likesCount--;
+        renderApp();
+      });
+    }
+
+  };
+
+  const initCommentsListeners = () => {
+    const commentsElements = document.querySelectorAll(".comment");
+
+    for (const commentElement of commentsElements) {
+      commentElement.addEventListener("click", () => {
+        const index = commentElement.dataset.index;
+        commentInputElement.value = `> ${comments[index].text}
+${comments[index].author},`
+
+        initLikeButtonsListeners();
+        initCommentsListeners();
+      });
+    }
+  };
+
+  buttonElement.addEventListener("click", () => {
+    buttonElement.disabled = true;
+    nameInputElement.classList.remove("error");
+    commentInputElement.classList.remove("error");
+
+    if (nameInputElement.value === "") {
+      nameInputElement.classList.add("error");
+      return;
+    }
+    if (commentInputElement.value === "") {
+      commentInputElement.classList.add("error");
+      return;
+    }
+
+    const currentDateTime = formatDateTime(new Date);
+
+    fetch("https://wedev-api.sky.pro/api/v1/andrey-kr/comments", {
+      method: "POST",
+      body: JSON.stringify({
+        text: commentInputElement.value.replaceAll("<", "&lt;").replaceAll(">", "&gt;"),
+        name: nameInputElement.value.replaceAll("<", "&lt;").replaceAll(">", "&gt;"),
+      }),
+    })
+    .then(() => {
+      getComments();
+    });
+
+    commentInputElement.value = '';
+  });
+
+  getComments();
+  renderComments();
+  initCommentsListeners();
+  initLikeButtonsListeners();
+
+</script>
+
 </html>
